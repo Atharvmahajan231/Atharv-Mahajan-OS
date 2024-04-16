@@ -1,0 +1,155 @@
+#include <iostream>
+using namespace std;
+
+int main() {
+
+	int A[100][4];
+	int i, j, n, total = 0, index, temp;
+	float avg_wt, avg_tat;
+
+	cout << "Enter number of process: ";
+	cin >> n;
+
+	cout << "Enter Burst Time:" << endl;
+
+	for (i = 0; i < n; i++) {
+		cout << "P" << i + 1 << ": ";
+		cin >> A[i][1];
+		A[i][0] = i + 1;
+	}
+
+	for (i = 0; i < n; i++) {
+		index = i;
+		for (j = i + 1; j < n; j++)
+			if (A[j][1] < A[index][1])
+				index = j;
+		temp = A[i][1];
+		A[i][1] = A[index][1];
+		A[index][1] = temp;
+
+		temp = A[i][0];
+		A[i][0] = A[index][0];
+		A[index][0] = temp;
+	}
+
+	A[0][2] = 0;
+	// Calculation of Waiting Times
+	for (i = 1; i < n; i++) {
+		A[i][2] = 0;
+		for (j = 0; j < i; j++)
+			A[i][2] += A[j][1];
+		total += A[i][2];
+	}
+
+	avg_wt = (float)total / n;
+	total = 0;
+	cout << "P	 BT	 WT	 TAT" << endl;
+
+	
+	for (i = 0; i < n; i++) {
+		A[i][3] = A[i][1] + A[i][2];
+		total += A[i][3];
+		cout << "P" << A[i][0] << "	 " << A[i][1] << "	 " << A[i][2] << "	 " << A[i][3] << endl;
+	}
+
+	avg_tat = (float)total / n;
+	cout << "Average Waiting Time= " << avg_wt << endl;
+	cout << "Average Turnaround Time= " << avg_tat << endl;
+}
+
+
+
+
+                                                   SRTF PREEMPTIVE:
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+struct Process {
+    int id;
+    int arrivalTime;
+    int burstTime;
+    int remainingTime;
+    int completionTime;
+    int waitingTime;
+    int turnaroundTime;
+};
+
+bool compareArrivalTime(const Process &a, const Process &b) {
+    return a.arrivalTime < b.arrivalTime;
+}
+
+bool compareRemainingTime(const Process &a, const Process &b) {
+    return a.remainingTime < b.remainingTime;
+}
+
+void SRTF(vector<Process> &processes) {
+    int n = processes.size();
+    int currentTime = 0;
+    int completed = 0;
+    vector<int> executed(n, 0); // to track if a process is executed
+
+    while (completed < n) {
+        int shortestRemainingTime = INT_MAX;
+        int shortestIndex = -1;
+
+        for (int i = 0; i < n; i++) {
+            if (processes[i].arrivalTime <= currentTime && processes[i].remainingTime < shortestRemainingTime && !executed[i]) {
+                shortestRemainingTime = processes[i].remainingTime;
+                shortestIndex = i;
+            }
+        }
+
+        if (shortestIndex == -1) {
+            currentTime++;
+        } else {
+            processes[shortestIndex].remainingTime--;
+            currentTime++;
+
+            if (processes[shortestIndex].remainingTime == 0) {
+                completed++;
+                executed[shortestIndex] = 1;
+                processes[shortestIndex].completionTime = currentTime;
+                processes[shortestIndex].turnaroundTime = processes[shortestIndex].completionTime - processes[shortestIndex].arrivalTime;
+                processes[shortestIndex].waitingTime = processes[shortestIndex].turnaroundTime - processes[shortestIndex].burstTime;
+            }
+        }
+    }
+}
+
+void displayProcesses(const vector<Process> &processes) {
+    cout << "ID\tArrival Time\tBurst Time\tCompletion Time\tWaiting Time\tTurnaround Time\n";
+    for (const Process &p : processes) {
+        cout << p.id << "\t" << p.arrivalTime << "\t\t" << p.burstTime << "\t\t" << p.completionTime << "\t\t" << p.waitingTime << "\t\t" << p.turnaroundTime << "\n";
+    }
+}
+
+int main() {
+    int n;
+    cout << "Enter the number of processes: ";
+    cin >> n;
+
+    vector<Process> processes(n);
+
+    cout << "Enter arrival time and burst time for each process:\n";
+    for (int i = 0; i < n; i++) {
+        processes[i].id = i + 1;
+        cout << "Process " << i + 1 << " arrival time: ";
+        cin >> processes[i].arrivalTime;
+        cout << "Process " << i + 1 << " burst time: ";
+        cin >> processes[i].burstTime;
+        processes[i].remainingTime = processes[i].burstTime;
+    }
+    sort(processes.begin(), processes.end(), compareArrivalTime);
+
+    SRTF(processes);
+
+    cout << "\nSRTF Scheduling Table:\n";
+    displayProcesses(processes);
+
+    return 0;
+}
